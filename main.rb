@@ -1,11 +1,26 @@
 # Exercise 5 Part 1 (Exception Handling)
+class ExternalServerError < StandardError
+end
+
+class MentalStateError < StandardError
+end
 
 class MentalState
   def auditable?
     # true if the external service is online, otherwise false
+    begin
+      online?
+    rescue
+      raise ExternalServerError, "External server is offline"
+    end 
   end
   def audit!
     # Could fail if external service is offline
+    begin
+      online?
+    rescue
+      raise ExternalServerError, "External server is offline, audit could fail"
+    end 
   end
   def do_work
     # Amazing stuff...
@@ -13,7 +28,7 @@ class MentalState
 end
 
 def audit_sanity(bedtime_mental_state)
-  return 0 unless bedtime_mental_state.auditable?
+  raise MentalStateError unless bedtime_mental_state.auditable?
   if bedtime_mental_state.audit!.ok?
     MorningMentalState.new(:ok)
   else 
@@ -22,7 +37,7 @@ def audit_sanity(bedtime_mental_state)
 end
 
 if audit_sanity(bedtime_mental_state) == 0
-  puts "error"
+  raise MentalStateError
 else
   new_state = audit_sanity(bedtime_mental_state)
 end
@@ -37,8 +52,10 @@ class BedtimeMentalState < MentalState ; end
 
 class MorningMentalState < MentalState ; end
 
+class MentalStateError < StandardError ; end
+
 def audit_sanity(bedtime_mental_state)
-  return nil unless bedtime_mental_state.auditable?
+  raise MentalStateError unless bedtime_mental_state.auditable?
   if bedtime_mental_state.audit!.ok?
     MorningMentalState.new(:ok)
   else 
@@ -56,11 +73,19 @@ new_state.do_work
 
 require 'candy_service'
 
-machine = CandyMachine.new
-machine.prepare
+class MyCandyMachine
 
-if machine.ready?
-  machine.make!
-else
-  puts "sadness"
+  def initialize
+    @candy_generator.prepare = CandyMachine.new
+  end
+
+  def generate_candy
+    if @candy_generator.ready?
+      @candy_generator.make!
+    else
+      puts "sadness"
+    end
+  end
+
 end
+    
